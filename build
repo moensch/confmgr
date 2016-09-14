@@ -3,4 +3,5 @@
 echo "Building..."
 
 mkdir -p bin
+go get
 go build -o ./bin/confmgr ./cmd/confmgr
