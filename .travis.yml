@@ -8,6 +8,6 @@ install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/AlekSi/gocov-xml
   - ./build
-  - ./install
+  - sudo ./install
 script:
   - ./test
