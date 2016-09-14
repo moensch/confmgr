@@ -14,7 +14,8 @@ key_paths = [
   "sites:%{site}",
   "databases",
   "global",
-  "default"
+  "default",
+  "test"
 ]
 key_prefix = "cfg:"
 hdr_prefix = "x-cfg-"

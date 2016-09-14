@@ -5,3 +5,4 @@ INSTALL=install
 
 echo "Installing confmgr to $BIN_DIR/confmgr..."
 $INSTALL -c bin/confmgr $BIN_DIR/confmgr
+$INSTALL confmgr.toml /etc/confmgr.toml

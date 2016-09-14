@@ -10,32 +10,39 @@ import (
 func TestExisting(t *testing.T) {
 	srv, _ := confmgr.NewConfMgr()
 
-	res := srv.ExistingKeys("db_policy", vars.TYPE_HASH)
+	res := srv.ExistingKeys("hash", vars.TYPE_HASH)
 	jsonblob, _ := json.MarshalIndent(res, "", "  ")
 	t.Logf("%s\n", string(jsonblob))
 }
 
-/*
 func TestLookupString(t *testing.T) {
 	srv, _ := confmgr.NewConfMgr()
 
-	res := srv.LookupString("string")
+	res, err := srv.LookupString("string")
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get hash: %s", err)
+	}
 	jsonblob, _ := json.MarshalIndent(res, "", "  ")
 	t.Logf("%s\n", string(jsonblob))
 }
-func TestLookupKeyHash(t *testing.T) {
+func TestLookupHash(t *testing.T) {
 	srv, _ := confmgr.NewConfMgr()
 
-	res, _ := srv.LookupKey("db_policy")
+	res, err := srv.LookupHash("hash")
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get hash: %s", err)
+	}
 	jsonblob, _ := json.MarshalIndent(res, "", "  ")
 	t.Logf("%s\n", string(jsonblob))
 }
 
-func TestLookupKeyString(t *testing.T) {
+func TestLookupList(t *testing.T) {
 	srv, _ := confmgr.NewConfMgr()
 
-	res, _ := srv.LookupKey("string")
+	res, err := srv.LookupList("array")
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get hash: %s", err)
+	}
 	jsonblob, _ := json.MarshalIndent(res, "", "  ")
 	t.Logf("%s\n", string(jsonblob))
 }
-*/

@@ -9,7 +9,7 @@ import (
 func TestString(t *testing.T) {
 	b := redis.Init()
 
-	str, err := b.GetString("cfg:default:string")
+	str, err := b.GetString("cfg:test:string")
 
 	if err != nil {
 		t.Fatalf("ERROR: Cannot get string: %s", err)
@@ -26,10 +26,10 @@ func TestType(t *testing.T) {
 	b := redis.Init()
 
 	testdata := make(map[string]int)
-	testdata["cfg:default:string"] = vars.TYPE_STRING
-	testdata["cfg:default:arraytest"] = vars.TYPE_LIST
-	testdata["cfg:default:db_policy"] = vars.TYPE_HASH
-	testdata["notfoud"] = vars.TYPE_NOT_FOUND
+	testdata["cfg:test:string"] = vars.TYPE_STRING
+	testdata["cfg:test:array"] = vars.TYPE_LIST
+	testdata["cfg:test:hash"] = vars.TYPE_HASH
+	testdata["notfound"] = vars.TYPE_NOT_FOUND
 
 	for keyname, expected := range testdata {
 		t.Logf("Testing type for key '%s'", keyname)
@@ -63,13 +63,13 @@ func TestExists(t *testing.T) {
 		t.Log("absent key returned false")
 	}
 
-	exists, err = b.Exists("cfg:default:string")
+	exists, err = b.Exists("cfg:test:string")
 
 	if err != nil {
 		t.Fatalf("ERROR: Cannot check exists: %s", err)
 	}
 	if exists == false {
-		t.Log("key cfg:default:string should return false on exists")
+		t.Log("key cfg:test:string should return false on exists")
 		t.Fail()
 	} else {
 		t.Log("present key returned true")
@@ -87,12 +87,12 @@ func TestHashFieldExist(t *testing.T) {
 
 	testdata := []TestEntry{
 		TestEntry{
-			"cfg:default:db_policy",
-			"name",
+			"cfg:test:hash",
+			"field",
 			true,
 		},
 		TestEntry{
-			"cfg:default:db_policy",
+			"cfg:test:hash",
 			"noexist",
 			false,
 		},
@@ -132,27 +132,27 @@ func TestListIndexExist(t *testing.T) {
 
 	testdata := []TestEntry{
 		TestEntry{
-			"cfg:default:arraytest",
+			"cfg:test:array",
 			0,
 			true,
 		},
 		TestEntry{
-			"cfg:default:arraytest",
+			"cfg:test:array",
 			1,
 			true,
 		},
 		TestEntry{
-			"cfg:default:arraytest",
+			"cfg:test:array",
 			2,
 			true,
 		},
 		TestEntry{
-			"cfg:default:arraytest",
+			"cfg:test:array",
 			3,
 			false,
 		},
 		TestEntry{
-			"cfg:default:arraytest",
+			"cfg:test:array",
 			-2,
 			false,
 		},
@@ -184,7 +184,7 @@ func TestListIndexExist(t *testing.T) {
 func TestHash(t *testing.T) {
 	b := redis.Init()
 
-	hash, err := b.GetHash("cfg:default:db_policy")
+	hash, err := b.GetHash("cfg:test:hash")
 
 	if err != nil {
 		t.Fatalf("ERROR: Cannot get hash: %s", err)
@@ -198,7 +198,7 @@ func TestHash(t *testing.T) {
 func TestHashField(t *testing.T) {
 	b := redis.Init()
 
-	str, err := b.GetHashField("cfg:default:db_policy", "name")
+	str, err := b.GetHashField("cfg:test:hash", "field")
 
 	if err != nil {
 		t.Fatalf("ERROR: Cannot get hash field: %s", err)
@@ -210,17 +210,18 @@ func TestHashField(t *testing.T) {
 func TestListIndex(t *testing.T) {
 	b := redis.Init()
 
-	str, err := b.GetListIndex("cfg:default:arraytest", 0)
+	str, err := b.GetListIndex("cfg:test:array", 0)
 
 	if err != nil {
 		t.Fatalf("ERROR: Cannot get list index: %s", err)
 	}
 	t.Logf("Retrieved list index: '%s'", str)
 }
+
 func TestList(t *testing.T) {
 	b := redis.Init()
 
-	strlist, err := b.GetList("cfg:default:arraytest")
+	strlist, err := b.GetList("cfg:test:array")
 
 	if err != nil {
 		t.Fatalf("ERROR: Cannot get list index: %s", err)
@@ -247,7 +248,7 @@ func TestListKeys(t *testing.T) {
 func TestListKeysFilter(t *testing.T) {
 	b := redis.Init()
 
-	keys, err := b.ListKeys("*samtest*")
+	keys, err := b.ListKeys("*test*")
 
 	if err != nil {
 		t.Fatalf("Cannot list keys: %s", err)
