@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+echo "Building..."
+
+mkdir -p bin
+go build -o ./bin/confmgr ./cmd/confmgr

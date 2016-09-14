@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+BIN_DIR=${BIN_DIR:-/usr/local/bin}
+INSTALL=install
+
+echo "Installing confmgr to $BIN_DIR/confmgr..."
+$INSTALL -c bin/confmgr $BIN_DIR/confmgr
