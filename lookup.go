@@ -1,19 +1,19 @@
 package confmgr
 
 import (
-	"errors"
 	"fmt"
 	"github.com/moensch/confmgr/vars"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-func (c *ConfMgr) LookupString(keyName string) (LookupStringResponse, error) {
+func (c *ConfMgr) LookupString(keyName string, scope map[string]string) (LookupStringResponse, error) {
 	var resp LookupStringResponse
 	var err error
 
-	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_STRING) {
+	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_STRING, scope) {
 		stringdata, err := c.Backend.GetString(keyName)
 		stringdata = c.SubstituteValues(stringdata)
 
@@ -29,13 +29,13 @@ func (c *ConfMgr) LookupString(keyName string) (LookupStringResponse, error) {
 	return resp, err
 }
 
-func (c *ConfMgr) LookupHash(keyName string) (LookupHashResponse, error) {
+func (c *ConfMgr) LookupHash(keyName string, scope map[string]string) (LookupHashResponse, error) {
 	var resp LookupHashResponse
 	var err error
 
 	var hashes_to_merge = make([]map[string]ValueSource, 0)
 
-	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_HASH) {
+	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_HASH, scope) {
 		hashdata, err := c.Backend.GetHash(keyName)
 
 		if err != nil {
@@ -67,13 +67,16 @@ func (c *ConfMgr) LookupHash(keyName string) (LookupHashResponse, error) {
 }
 
 func (c *ConfMgr) LookupHashFieldByString(searchString string) string {
+	//TODO
+	scope := make(map[string]string)
+	scope["pod"] = "atr2"
 	// ${key/fieldname}
 	hash_field_vars := regexp.MustCompile("\\${(\\S+?)/(\\S+?)}")
 	matches := hash_field_vars.FindAllStringSubmatch(searchString, -1)
 	if len(matches) > 0 {
 		keyName := matches[0][1]
 		fieldName := matches[0][2]
-		resp, err := c.LookupHashField(keyName, fieldName)
+		resp, err := c.LookupHashField(keyName, fieldName, scope)
 
 		if err != nil {
 			return ""
@@ -84,11 +87,11 @@ func (c *ConfMgr) LookupHashFieldByString(searchString string) string {
 	return ""
 }
 
-func (c *ConfMgr) LookupHashField(keyName string, fieldName string) (LookupStringResponse, error) {
+func (c *ConfMgr) LookupHashField(keyName string, fieldName string, scope map[string]string) (LookupStringResponse, error) {
 	var resp LookupStringResponse
 	var err error
 
-	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_HASH) {
+	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_HASH, scope) {
 		exists, err := c.Backend.HashFieldExists(keyName, fieldName)
 		if err != nil {
 			return resp, err
@@ -108,11 +111,11 @@ func (c *ConfMgr) LookupHashField(keyName string, fieldName string) (LookupStrin
 	resp.Type = TypeToString(vars.TYPE_STRING)
 	return resp, err
 }
-func (c *ConfMgr) LookupList(keyName string) (LookupListResponse, error) {
+func (c *ConfMgr) LookupList(keyName string, scope map[string]string) (LookupListResponse, error) {
 	var resp LookupListResponse
 	var err error
 
-	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_LIST) {
+	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_LIST, scope) {
 		listdata, err := c.Backend.GetList(keyName)
 
 		if err != nil {
@@ -128,32 +131,35 @@ func (c *ConfMgr) LookupList(keyName string) (LookupListResponse, error) {
 	resp.Type = TypeToString(vars.TYPE_LIST)
 	return resp, err
 }
-func (c *ConfMgr) LookupListIndex(keyName string, listIndex int64) (LookupStringResponse, error) {
+func (c *ConfMgr) LookupListIndex(keyName string, listIndex int64, scope map[string]string) (LookupStringResponse, error) {
 	var resp LookupStringResponse
 	var err error
 
-	list, err := c.LookupList(keyName)
+	list, err := c.LookupList(keyName, scope)
 	if err != nil {
 		return resp, err
 	}
 
-	if int(listIndex) >= len(list.Data) {
-		return resp, errors.New("List index out of range")
-	}
-	resp.Data = list.Data[listIndex]
-
 	resp.Type = TypeToString(vars.TYPE_STRING)
+	if int(listIndex) >= len(list.Data) {
+		resp.Data = ValueSource{"", ""}
+	} else {
+		resp.Data = list.Data[listIndex]
+	}
+
 	return resp, err
 }
 
 func (c *ConfMgr) LookupListIndexByString(searchString string) string {
 	// ${key/index/3}
+	//TODO
+	scope := make(map[string]string)
 	hash_field_vars := regexp.MustCompile("\\${(\\S+?)/index/(\\d+?)}")
 	matches := hash_field_vars.FindAllStringSubmatch(searchString, -1)
 	if len(matches) > 0 {
 		keyName := matches[0][1]
 		listIndex, _ := strconv.ParseInt(matches[0][2], 10, 64)
-		resp, err := c.LookupListIndex(keyName, listIndex)
+		resp, err := c.LookupListIndex(keyName, listIndex, scope)
 
 		if err != nil {
 			return ""
@@ -180,12 +186,12 @@ func (c *ConfMgr) SubstituteValues(input string) string {
 /*
  * Return all matches based on search path and partial key name
  */
-func (c *ConfMgr) ExistingKeys(key string, wantedType int) []string {
+func (c *ConfMgr) ExistingKeys(key string, wantedType int, scope map[string]string) []string {
 	foundKeys := make([]string, 0)
 
-	for _, path := range c.SearchPaths() {
+	for _, path := range c.SearchPaths(scope) {
 		keyName := fmt.Sprintf("%s%s:%s", c.Config.Main.KeyPrefix, path, key)
-		//log.Printf("Searching key: '%s'", keyName)
+		log.Printf("Searching key: '%s'", keyName)
 		keytype, _ := c.Backend.GetType(keyName)
 
 		if keytype == wantedType {
@@ -200,9 +206,8 @@ func (c *ConfMgr) ExistingKeys(key string, wantedType int) []string {
  * Returns the paths in reverse order as this is how all other functions
  * will consume it
  **/
-func (c *ConfMgr) SearchPaths() []string {
-	reqscope := c.GetRequestScope()
-	//log.Printf("Scope: %q\n", reqscope)
+func (c *ConfMgr) SearchPaths(reqscope map[string]string) []string {
+	log.Printf("Scope: %q\n", reqscope)
 
 	newKeyPaths := make([]string, 0)
 

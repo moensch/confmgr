@@ -160,6 +160,48 @@ func (c *ConfMgr) HandleKeyDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (c *ConfMgr) HandleListAppend(w http.ResponseWriter, r *http.Request) {
+	reqVars := mux.Vars(r)
+	keyName := reqVars["keyName"]
+
+	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
+		keyName = c.Config.Main.KeyPrefix + keyName
+	}
+
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Backend error: %s\n", err)
+		return
+	}
+
+	if err := r.Body.Close(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Backend error: %s\n", err)
+		return
+	}
+
+	log.Printf("List append to %s: '%s'", keyName, body)
+	err = c.ListAppendFromJSON(keyName, body)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Backend error: %s\n", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (c *ConfMgr) ListAppendFromJSON(keyName string, jsondata []byte) error {
+	var request DataRequest
+
+	if err := json.Unmarshal(jsondata, &request); err != nil {
+		return err
+	}
+
+	return c.Backend.ListAppend(keyName, request.Data)
+}
 func (c *ConfMgr) HandleSetHashField(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]

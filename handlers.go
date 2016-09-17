@@ -2,6 +2,7 @@ package confmgr
 
 import (
 	"fmt"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -28,8 +29,21 @@ func (c *ConfMgr) SetRequestScopeFromHeaders(headers http.Header) {
 	}
 }
 
-func (c *ConfMgr) GetRequestScope() map[string]string {
-	return c.RequestScope
+func ScopeFromHeaders(headers http.Header) map[string]string {
+	scope := make(map[string]string)
+	for hdrname, hdrval := range headers {
+		hdrname = strings.ToLower(hdrname)
+		if strings.HasPrefix(hdrname, "x-cfg-") {
+			scopevar := strings.TrimPrefix(hdrname, "x-cfg-")
+			scopeval := strings.ToLower(hdrval[0])
+			scope[scopevar] = scopeval
+		}
+	}
+
+	return scope
+}
+func GetRequestScope(r *http.Request) map[string]string {
+	return context.Get(r, ReqScope).(map[string]string)
 	/*
 		scopevars := make(map[string]string)
 		scopevars["pod"] = "ml2"
@@ -42,13 +56,12 @@ func (c *ConfMgr) GetRequestScope() map[string]string {
 }
 
 func (c *ConfMgr) HandleLookupHash(w http.ResponseWriter, r *http.Request) {
-	c.SetRequestScopeFromHeaders(r.Header)
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 
 	log.Printf("Requesting hash lookup: %s", keyName)
 
-	resp, err := c.LookupHash(keyName)
+	resp, err := c.LookupHash(keyName, GetRequestScope(r))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -60,18 +73,16 @@ func (c *ConfMgr) HandleLookupHash(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Key %s not found\n", keyName)
 		return
 	}
-
 	SendResponse(w, r, resp)
 }
 
 func (c *ConfMgr) HandleLookupString(w http.ResponseWriter, r *http.Request) {
-	c.SetRequestScopeFromHeaders(r.Header)
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 
 	log.Printf("Requesting string lookup: %s", keyName)
 
-	resp, err := c.LookupString(keyName)
+	resp, err := c.LookupString(keyName, GetRequestScope(r))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -88,13 +99,12 @@ func (c *ConfMgr) HandleLookupString(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ConfMgr) HandleLookupList(w http.ResponseWriter, r *http.Request) {
-	c.SetRequestScopeFromHeaders(r.Header)
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 
 	log.Printf("Requesting list lookup: %s", keyName)
 
-	resp, err := c.LookupList(keyName)
+	resp, err := c.LookupList(keyName, GetRequestScope(r))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -111,14 +121,13 @@ func (c *ConfMgr) HandleLookupList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ConfMgr) HandleLookupHashField(w http.ResponseWriter, r *http.Request) {
-	c.SetRequestScopeFromHeaders(r.Header)
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	fieldName := reqVars["fieldName"]
 
 	log.Printf("Requesting hash field lookup: %s/%s", keyName, fieldName)
 
-	resp, err := c.LookupHashField(keyName, fieldName)
+	resp, err := c.LookupHashField(keyName, fieldName, GetRequestScope(r))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -135,14 +144,13 @@ func (c *ConfMgr) HandleLookupHashField(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *ConfMgr) HandleLookupListIndex(w http.ResponseWriter, r *http.Request) {
-	c.SetRequestScopeFromHeaders(r.Header)
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	listIndex, _ := strconv.ParseInt(reqVars["listIndex"], 10, 64)
 
 	log.Printf("Requesting list index lookup: %s[%d]", keyName, listIndex)
 
-	resp, err := c.LookupListIndex(keyName, listIndex)
+	resp, err := c.LookupListIndex(keyName, listIndex, GetRequestScope(r))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)

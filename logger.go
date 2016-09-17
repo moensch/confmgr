@@ -1,13 +1,17 @@
 package confmgr
 
 import (
+	"github.com/gorilla/context"
 	"log"
 	"net/http"
 	"time"
 )
 
-func Logger(inner http.Handler, name string) http.Handler {
+const ReqScope = 0
+
+func (c *ConfMgr) ClientHandler(inner http.Handler, name string) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		context.Set(r, ReqScope, ScopeFromHeaders(r.Header))
 		start := time.Now()
 		inner.ServeHTTP(w, r)
 		log.Printf(
@@ -17,5 +21,6 @@ func Logger(inner http.Handler, name string) http.Handler {
 			name,
 			time.Since(start),
 		)
+		context.Clear(r)
 	})
 }

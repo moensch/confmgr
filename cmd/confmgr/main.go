@@ -8,8 +8,7 @@ import (
 func main() {
 	srv, err := confmgr.NewConfMgr()
 	if err != nil {
-		log.Printf("Cannot start server: %s", err)
-		log.Fatal("exiting")
+		log.Fatalf("Cannot start server: %s", err)
 	}
 	log.Println("initialized")
 

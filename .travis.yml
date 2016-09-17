@@ -11,10 +11,3 @@ install:
   - sudo ./install
 script:
   - ./test
-deploy:
-  provider: releases
-  api_key: b2a37944d34db31cedcf5dedd9efca9ff46472d6
-  file: bin/confmgr
-  skip_cleanup: true
-  on:
-    tags: true
