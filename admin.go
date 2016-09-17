@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-func (c *ConfMgr) HandleGetKeyType(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminGetKeyType(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -38,7 +38,7 @@ func (c *ConfMgr) HandleGetKeyType(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) KeyStore(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminKeyStore(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -68,7 +68,7 @@ func (c *ConfMgr) KeyStore(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *ConfMgr) HandleListHashFields(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminListHashFields(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -94,7 +94,7 @@ func (c *ConfMgr) HandleListHashFields(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) HandleListKeys(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminListKeys(w http.ResponseWriter, r *http.Request) {
 	resp, err := c.ListKeys("")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -105,7 +105,7 @@ func (c *ConfMgr) HandleListKeys(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) HandleListKeysFiltered(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminListKeysFiltered(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	filter := reqVars["filter"]
 	if !strings.HasPrefix(filter, c.Config.Main.KeyPrefix) {
@@ -143,7 +143,7 @@ func (c *ConfMgr) ListKeys(filter string) (ListKeyResponse, error) {
 	return resp, err
 }
 
-func (c *ConfMgr) HandleKeyDelete(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminKeyDelete(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -202,7 +202,7 @@ func (c *ConfMgr) ListAppendFromJSON(keyName string, jsondata []byte) error {
 
 	return c.Backend.ListAppend(keyName, request.Data)
 }
-func (c *ConfMgr) HandleSetHashField(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminSetHashField(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	fieldName := reqVars["fieldName"]
@@ -287,7 +287,7 @@ func (c *ConfMgr) StoreList(keyName string, data ListKeyResponse) error {
 /*
  * Retrieve an absolute key (of any type)
  */
-func (c *ConfMgr) KeyGet(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -351,7 +351,7 @@ func (c *ConfMgr) KeyGet(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (c *ConfMgr) KeyGetHashField(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -406,7 +406,7 @@ func (c *ConfMgr) KeyGetHashField(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) KeyGetListIndex(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminGetListIndex(w http.ResponseWriter, r *http.Request) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
