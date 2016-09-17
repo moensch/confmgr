@@ -6,4 +6,4 @@ echo "Building..."
 mkdir -p bin
 go get
 go build -o ./bin/confmgr ./cmd/confmgr
-#CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -o ./bin/confmgr-static -installsuffix cgo ./cmd/confmgr
+CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -o ./bin/confmgr-static -installsuffix cgo ./cmd/confmgr
