@@ -17,6 +17,10 @@ type ConfMgr struct {
 	RequestScope map[string]string
 }
 
+var (
+	backendFactory backend.ConfigBackendFactory
+)
+
 func NewConfMgr() (*ConfMgr, error) {
 	confmgr := &ConfMgr{
 		Config: ConfigMgrConfig{
@@ -46,7 +50,8 @@ func NewConfMgr() (*ConfMgr, error) {
 		}
 	}
 
-	confmgr.Backend = redis.Init()
+	backendFactory = redis.NewFactory()
+	//confmgr.Backend = redis.Init()
 	confmgr.Router = confmgr.NewRouter()
 
 	return confmgr, err

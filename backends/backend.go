@@ -17,4 +17,10 @@ type ConfigBackend interface {
 	SetString(string, string) error
 	ListKeys(string) ([]string, error)
 	ListAppend(string, string) error
+	Check() error
+	Close()
+}
+
+type ConfigBackendFactory interface {
+	NewBackend() ConfigBackend
 }

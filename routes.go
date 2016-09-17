@@ -1,6 +1,8 @@
 package confmgr
 
-import "net/http"
+import (
+	"net/http"
+)
 
 type Route struct {
 	Name        string
@@ -17,97 +19,97 @@ func (c *ConfMgr) RouteDefinitions() Routes {
 			"Index",
 			"GET",
 			"/",
-			c.Index,
+			handlerDecorate(c.Index),
 		},
 		Route{
 			"HandleAdminListKeys",
 			"GET",
 			"/admin/keys",
-			c.HandleAdminListKeys,
+			handlerDecorate(c.HandleAdminListKeys),
 		},
 		Route{
 			"HandleAdminListKeysFiltered",
 			"GET",
 			"/admin/keys/{filter}",
-			c.HandleAdminListKeysFiltered,
+			handlerDecorate(c.HandleAdminListKeysFiltered),
 		},
 		Route{
 			"HandleAdminListHashFields",
 			"GET",
 			"/admin/util/hashfields/{keyName}",
-			c.HandleAdminListHashFields,
+			handlerDecorate(c.HandleAdminListHashFields),
 		},
 		Route{
 			"HandleAdminGetKeyType",
 			"GET",
 			"/admin/util/type/{keyName}",
-			c.HandleAdminGetKeyType,
+			handlerDecorate(c.HandleAdminGetKeyType),
 		},
 		Route{
 			"HandleAdminGetKey",
 			"GET",
 			"/admin/key/{keyName}",
-			c.HandleAdminKeyGet,
+			handlerDecorate(c.HandleAdminKeyGet),
 		},
 		Route{
 			"HandleAdminKeyStore",
 			"POST",
 			"/admin/key/{keyName}",
-			c.HandleAdminKeyStore,
+			handlerDecorate(c.HandleAdminKeyStore),
 		},
 		Route{
 			"HandleAdminKeyDelete",
 			"DELETE",
 			"/admin/key/{keyName}",
-			c.HandleAdminKeyDelete,
+			handlerDecorate(c.HandleAdminKeyDelete),
 		},
 		Route{
 			"HandleAdminGetHashField",
 			"GET",
 			"/admin/key/{keyName}/{fieldName}",
-			c.HandleAdminGetHashField,
+			handlerDecorate(c.HandleAdminGetHashField),
 		},
 		Route{
 			"HandleAdminSetHashField",
 			"POST",
 			"/admin/key/{keyName}/{fieldName}",
-			c.HandleAdminSetHashField,
+			handlerDecorate(c.HandleAdminSetHashField),
 		},
 		Route{
 			"HandleAdminGetListIndex",
 			"GET",
 			"/admin/key/{keyName}/index/{listIndex:[0-9]+}",
-			c.HandleAdminGetListIndex,
+			handlerDecorate(c.HandleAdminGetListIndex),
 		},
 		Route{
 			"HandleLookupHash",
 			"GET",
 			"/hash/{keyName}",
-			c.HandleLookupHash,
+			handlerDecorate(c.HandleLookupHash),
 		},
 		Route{
 			"HandleLookupString",
 			"GET",
 			"/string/{keyName}",
-			c.HandleLookupString,
+			handlerDecorate(c.HandleLookupString),
 		},
 		Route{
 			"HandleLookupList",
 			"GET",
 			"/list/{keyName}",
-			c.HandleLookupList,
+			handlerDecorate(c.HandleLookupList),
 		},
 		Route{
 			"HandleLookupHashField",
 			"GET",
 			"/string/{keyName}/{fieldName}",
-			c.HandleLookupHashField,
+			handlerDecorate(c.HandleLookupHashField),
 		},
 		Route{
 			"HandleLookupListIndex",
 			"GET",
 			"/string/{keyName}/index/{listIndex}",
-			c.HandleLookupListIndex,
+			handlerDecorate(c.HandleLookupListIndex),
 		},
 	}
 }

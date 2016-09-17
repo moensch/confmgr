@@ -3,11 +3,12 @@ package confmgr
 import (
 	"fmt"
 	"github.com/gorilla/context"
+	"github.com/moensch/confmgr/backends"
 	"net/http"
 	"strings"
 )
 
-func (c *ConfMgr) Index(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) Index(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	fmt.Fprintln(w, "Welcome!")
 }
 

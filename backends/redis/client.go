@@ -4,33 +4,71 @@ import (
 	"errors"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"github.com/moensch/confmgr/backends"
 	"github.com/moensch/confmgr/vars"
 	"log"
+	"time"
 )
 
-type ConfigBackendRedis struct {
-	proto string
-	addr  string
-	Conn  redis.Conn
+type ConfigBackendRedisFactory struct {
+	Pool *redis.Pool
 }
 
-func Init() *ConfigBackendRedis {
+func NewFactory() backend.ConfigBackendFactory {
+	factory := &ConfigBackendRedisFactory{
+		Pool: newRedisPool("tcp", ":6379"),
+	}
+
+	return factory
+}
+
+func (f *ConfigBackendRedisFactory) NewBackend() backend.ConfigBackend {
 	// TODO: Make config passing work
-	backend := &ConfigBackendRedis{
-		proto: "tcp",
-		addr:  ":6379",
-	}
+	backend := &ConfigBackendRedis{}
 
-	var err error
-	backend.Conn, err = redis.Dial(backend.proto, backend.addr)
-
+	backend.Conn = f.Pool.Get()
+	err := backend.Conn.Err()
 	if err != nil {
-		log.Fatalf("ERROR during redis conn: %s\n", err)
+		log.Printf("redis error: %s", err)
 	}
-
-	log.Print("Connected to redis")
 
 	return backend
+}
+
+func newRedisPool(proto string, address string) *redis.Pool {
+	log.Printf("Setting up redis pool for: %s:%s", proto, address)
+	return &redis.Pool{
+		MaxIdle:     5,
+		MaxActive:   20,
+		Wait:        true,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial(proto, address)
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			if time.Since(t) < time.Minute {
+				return nil
+			}
+			_, err := c.Do("PING")
+			return err
+		},
+	}
+}
+
+type ConfigBackendRedis struct {
+	Conn redis.Conn
+}
+
+func (b ConfigBackendRedis) Check() error {
+	return b.Conn.Err()
+}
+
+func (b ConfigBackendRedis) Close() {
+	b.Conn.Close()
 }
 
 func (b ConfigBackendRedis) GetType(key string) (int, error) {

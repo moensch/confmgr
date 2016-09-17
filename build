@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 set -e
-
 echo "Building..."
 
 mkdir -p bin
 go get
 go build -o ./bin/confmgr ./cmd/confmgr
-CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -o ./bin/confmgr-static -installsuffix cgo ./cmd/confmgr
+
+if [[ -n "$1" && "$1" == "static" ]]; then
+  echo "Building static binary..."
+  CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -o ./bin/confmgr-static -installsuffix cgo ./cmd/confmgr
+fi

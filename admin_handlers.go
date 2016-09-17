@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/moensch/confmgr/backends"
 	"github.com/moensch/confmgr/vars"
 	"io"
 	"io/ioutil"
@@ -14,14 +15,14 @@ import (
 	"strings"
 )
 
-func (c *ConfMgr) HandleAdminGetKeyType(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminGetKeyType(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
 		keyName = c.Config.Main.KeyPrefix + keyName
 	}
 
-	keytype, err := c.Backend.GetType(keyName)
+	keytype, err := b.GetType(keyName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -38,7 +39,7 @@ func (c *ConfMgr) HandleAdminGetKeyType(w http.ResponseWriter, r *http.Request) 
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) HandleAdminKeyStore(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminKeyStore(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -58,7 +59,7 @@ func (c *ConfMgr) HandleAdminKeyStore(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Backend error: %s\n", err)
 		return
 	}
-	err = c.SaveKeyFromJSON(keyName, body)
+	err = c.SaveKeyFromJSON(keyName, body, b)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -68,14 +69,14 @@ func (c *ConfMgr) HandleAdminKeyStore(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *ConfMgr) HandleAdminListHashFields(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminListHashFields(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
 		keyName = c.Config.Main.KeyPrefix + keyName
 	}
 
-	value, err := c.Backend.GetHash(keyName)
+	value, err := b.GetHash(keyName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -94,8 +95,8 @@ func (c *ConfMgr) HandleAdminListHashFields(w http.ResponseWriter, r *http.Reque
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) HandleAdminListKeys(w http.ResponseWriter, r *http.Request) {
-	resp, err := c.ListKeys("")
+func (c *ConfMgr) HandleAdminListKeys(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
+	resp, err := c.ListKeys("", b)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -105,14 +106,14 @@ func (c *ConfMgr) HandleAdminListKeys(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) HandleAdminListKeysFiltered(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminListKeysFiltered(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	filter := reqVars["filter"]
 	if !strings.HasPrefix(filter, c.Config.Main.KeyPrefix) {
 		filter = c.Config.Main.KeyPrefix + filter
 	}
 
-	resp, err := c.ListKeys(filter)
+	resp, err := c.ListKeys(filter, b)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -123,9 +124,9 @@ func (c *ConfMgr) HandleAdminListKeysFiltered(w http.ResponseWriter, r *http.Req
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) ListKeys(filter string) (ListKeyResponse, error) {
+func (c *ConfMgr) ListKeys(filter string, b backend.ConfigBackend) (ListKeyResponse, error) {
 	var resp ListKeyResponse
-	keys, err := c.Backend.ListKeys(filter)
+	keys, err := b.ListKeys(filter)
 
 	if err != nil {
 		return resp, err
@@ -143,14 +144,14 @@ func (c *ConfMgr) ListKeys(filter string) (ListKeyResponse, error) {
 	return resp, err
 }
 
-func (c *ConfMgr) HandleAdminKeyDelete(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminKeyDelete(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
 		keyName = c.Config.Main.KeyPrefix + keyName
 	}
 
-	err := c.Backend.DeleteKey(keyName)
+	err := b.DeleteKey(keyName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -160,7 +161,7 @@ func (c *ConfMgr) HandleAdminKeyDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *ConfMgr) HandleListAppend(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleListAppend(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 
@@ -182,7 +183,7 @@ func (c *ConfMgr) HandleListAppend(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("List append to %s: '%s'", keyName, body)
-	err = c.ListAppendFromJSON(keyName, body)
+	err = c.ListAppendFromJSON(keyName, body, b)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -193,16 +194,16 @@ func (c *ConfMgr) HandleListAppend(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *ConfMgr) ListAppendFromJSON(keyName string, jsondata []byte) error {
+func (c *ConfMgr) ListAppendFromJSON(keyName string, jsondata []byte, b backend.ConfigBackend) error {
 	var request DataRequest
 
 	if err := json.Unmarshal(jsondata, &request); err != nil {
 		return err
 	}
 
-	return c.Backend.ListAppend(keyName, request.Data)
+	return b.ListAppend(keyName, request.Data)
 }
-func (c *ConfMgr) HandleAdminSetHashField(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminSetHashField(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	fieldName := reqVars["fieldName"]
@@ -224,7 +225,7 @@ func (c *ConfMgr) HandleAdminSetHashField(w http.ResponseWriter, r *http.Request
 	}
 
 	log.Printf("Set hfield %s/%s to '%s'", keyName, fieldName, body)
-	err = c.SetHashFieldFromJSON(keyName, fieldName, body)
+	err = c.SetHashFieldFromJSON(keyName, fieldName, body, b)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -235,7 +236,7 @@ func (c *ConfMgr) HandleAdminSetHashField(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *ConfMgr) SetHashFieldFromJSON(keyName string, fieldName string, jsondata []byte) error {
+func (c *ConfMgr) SetHashFieldFromJSON(keyName string, fieldName string, jsondata []byte, b backend.ConfigBackend) error {
 	var request DataRequest
 
 	if err := json.Unmarshal(jsondata, &request); err != nil {
@@ -243,10 +244,10 @@ func (c *ConfMgr) SetHashFieldFromJSON(keyName string, fieldName string, jsondat
 	}
 
 	log.Printf("Settings %s/%s to '%s'", keyName, fieldName, request.Data)
-	return c.Backend.SetHashField(keyName, fieldName, request.Data)
+	return b.SetHashField(keyName, fieldName, request.Data)
 }
 
-func (c *ConfMgr) SaveKeyFromJSON(keyName string, jsondata []byte) error {
+func (c *ConfMgr) SaveKeyFromJSON(keyName string, jsondata []byte, b backend.ConfigBackend) error {
 	var err error
 
 	var keyEntry GenericRequest
@@ -257,11 +258,11 @@ func (c *ConfMgr) SaveKeyFromJSON(keyName string, jsondata []byte) error {
 
 	switch keyEntry.Type {
 	case "string":
-		c.StoreString(keyName, keyEntry.AsString())
+		c.StoreString(keyName, keyEntry.AsString(), b)
 	case "hash":
-		c.StoreHash(keyName, keyEntry.AsHash())
+		c.StoreHash(keyName, keyEntry.AsHash(), b)
 	case "list":
-		c.StoreList(keyName, keyEntry.AsList())
+		c.StoreList(keyName, keyEntry.AsList(), b)
 	default:
 		log.Print("ERROR")
 	}
@@ -269,31 +270,31 @@ func (c *ConfMgr) SaveKeyFromJSON(keyName string, jsondata []byte) error {
 	return err
 }
 
-func (c *ConfMgr) StoreString(keyName string, data StringKeyResponse) error {
-	err := c.Backend.SetString(keyName, data.Data)
+func (c *ConfMgr) StoreString(keyName string, data StringKeyResponse, b backend.ConfigBackend) error {
+	err := b.SetString(keyName, data.Data)
 	return err
 }
 
-func (c *ConfMgr) StoreHash(keyName string, data HashKeyResponse) error {
-	err := c.Backend.SetHash(keyName, data.Data)
+func (c *ConfMgr) StoreHash(keyName string, data HashKeyResponse, b backend.ConfigBackend) error {
+	err := b.SetHash(keyName, data.Data)
 	return err
 }
 
-func (c *ConfMgr) StoreList(keyName string, data ListKeyResponse) error {
-	err := c.Backend.SetList(keyName, data.Data)
+func (c *ConfMgr) StoreList(keyName string, data ListKeyResponse, b backend.ConfigBackend) error {
+	err := b.SetList(keyName, data.Data)
 	return err
 }
 
 /*
  * Retrieve an absolute key (of any type)
  */
-func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
 		keyName = c.Config.Main.KeyPrefix + keyName
 	}
-	keytype, err := c.Backend.GetType(keyName)
+	keytype, err := b.GetType(keyName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -308,7 +309,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Key %s not found\n", keyName)
 		return
 	case vars.TYPE_STRING:
-		value, err := c.Backend.GetString(keyName)
+		value, err := b.GetString(keyName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -319,7 +320,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request) {
 			Data: value,
 		}
 	case vars.TYPE_LIST:
-		value, err := c.Backend.GetList(keyName)
+		value, err := b.GetList(keyName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -330,7 +331,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request) {
 			Data: value,
 		}
 	case vars.TYPE_HASH:
-		value, err := c.Backend.GetHash(keyName)
+		value, err := b.GetHash(keyName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -351,7 +352,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -359,7 +360,7 @@ func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request
 	}
 	fieldName := reqVars["fieldName"]
 
-	keytype, err := c.Backend.GetType(keyName)
+	keytype, err := b.GetType(keyName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -374,7 +375,7 @@ func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request
 		fmt.Fprintf(w, "Key %s not found\n", keyName)
 		return
 	case vars.TYPE_HASH:
-		exists, err := c.Backend.HashFieldExists(keyName, fieldName)
+		exists, err := b.HashFieldExists(keyName, fieldName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -385,7 +386,7 @@ func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request
 			fmt.Fprintf(w, "Key %s not found\n", keyName)
 			return
 		}
-		value, err := c.Backend.GetHashField(keyName, fieldName)
+		value, err := b.GetHashField(keyName, fieldName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -406,7 +407,7 @@ func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request
 	SendResponse(w, r, resp)
 }
 
-func (c *ConfMgr) HandleAdminGetListIndex(w http.ResponseWriter, r *http.Request) {
+func (c *ConfMgr) HandleAdminGetListIndex(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
@@ -414,7 +415,7 @@ func (c *ConfMgr) HandleAdminGetListIndex(w http.ResponseWriter, r *http.Request
 	}
 	listIndex, _ := strconv.ParseInt(reqVars["listIndex"], 10, 64)
 
-	keytype, err := c.Backend.GetType(keyName)
+	keytype, err := b.GetType(keyName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -429,7 +430,7 @@ func (c *ConfMgr) HandleAdminGetListIndex(w http.ResponseWriter, r *http.Request
 		fmt.Fprintf(w, "Key %s not found\n", keyName)
 		return
 	case vars.TYPE_LIST:
-		exists, err := c.Backend.ListIndexExists(keyName, listIndex)
+		exists, err := b.ListIndexExists(keyName, listIndex)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Backend error: %s\n", err)
@@ -440,7 +441,7 @@ func (c *ConfMgr) HandleAdminGetListIndex(w http.ResponseWriter, r *http.Request
 			fmt.Fprintf(w, "Key %s not found\n", keyName)
 			return
 		}
-		value, err := c.Backend.GetListIndex(keyName, listIndex)
+		value, err := b.GetListIndex(keyName, listIndex)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Backend error: %s\n", err)
