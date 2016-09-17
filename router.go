@@ -1,10 +1,12 @@
 package confmgr
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/moensch/confmgr/backends"
 	"net/http"
+	"time"
 )
 
 func (c *ConfMgr) NewRouter() *mux.Router {
@@ -29,11 +31,20 @@ type HandlerFuncBackend func(w http.ResponseWriter, r *http.Request, b backend.C
 
 func handlerDecorate(f HandlerFuncBackend) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		context.Set(r, ReqScope, ScopeFromHeaders(r.Header))
+		start := time.Now()
+		scope := ScopeFromHeaders(r.Header)
+		context.Set(r, ReqScope, scope)
 
 		b := backendFactory.NewBackend()
 		defer b.Close()
 		f(w, r, b)
+		log.WithFields(log.Fields{
+			"method": r.Method,
+			"uri":    r.RequestURI,
+			"client": r.RemoteAddr,
+			"time":   time.Since(start),
+			"scope":  scope,
+		}).Info("Request")
 		context.Clear(r)
 	})
 }

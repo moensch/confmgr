@@ -2,6 +2,7 @@ package confmgr
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/moensch/confmgr/backends"
 	"github.com/moensch/confmgr/vars"
 	"regexp"
@@ -175,6 +176,7 @@ func (c *ConfMgr) LookupListIndexByString(searchString string, b backend.ConfigB
  * and replaces them with a lookup value
  */
 func (c *ConfMgr) SubstituteValues(input string) string {
+	//TODO
 	//hash_field_vars := regexp.MustCompile("\\${(\\S+?/\\S+?)}")
 	//list_index_vars := regexp.MustCompile("\\${(\\S+?/index/\\S+?)}")
 
@@ -191,10 +193,11 @@ func (c *ConfMgr) ExistingKeys(key string, wantedType int, scope map[string]stri
 
 	for _, path := range c.SearchPaths(scope) {
 		keyName := fmt.Sprintf("%s%s:%s", c.Config.Main.KeyPrefix, path, key)
-		//log.Printf("Searching key: '%s'", keyName)
+		log.Debugf("Searching key: '%s'", keyName)
 		keytype, _ := b.GetType(keyName)
 
 		if keytype == wantedType {
+			log.Debugf("Using key: %s", keyName)
 			foundKeys = append(foundKeys, keyName)
 		}
 	}
@@ -207,7 +210,7 @@ func (c *ConfMgr) ExistingKeys(key string, wantedType int, scope map[string]stri
  * will consume it
  **/
 func (c *ConfMgr) SearchPaths(reqscope map[string]string) []string {
-	//log.Printf("Scope: %q\n", reqscope)
+	log.Debugf("SearchPaths scope: %q\n", reqscope)
 
 	newKeyPaths := make([]string, 0)
 
@@ -216,23 +219,21 @@ func (c *ConfMgr) SearchPaths(reqscope map[string]string) []string {
 
 PathsLoop:
 	for _, path := range c.Config.Main.KeyPaths {
-		//log.Printf("Key path: '%s'", path)
+		log.Debugf("Config key path: '%s'", path)
 		matches := token_re.FindAllStringSubmatch(path, -1)
 		if len(matches) > 0 {
 			for _, match := range matches {
 				token_str := match[0]
 				token_name := match[1]
-				//log.Printf("  token_str : %s\n", token_str)
-				//log.Printf("  token_name: %s\n", token_name)
 
 				// Check if this token is defined in the request scope
 				if val, ok := reqscope[token_name]; ok {
-					//log.Printf("   Token '%s' is defined in the request as '%s'", token_name, val)
+					log.Debugf("   Token '%s' is defined in the request as '%s'", token_name, val)
 					path = strings.Replace(path, token_str, val, 1)
-					//log.Printf("      Modified path: %s", path)
+					log.Debugf("    Modified path: %s", path)
 				} else {
 					// Cannot replace this token, ignore this path completely
-					//log.Printf("      NOT USING THIS PATH")
+					log.Debugf("  Ignoring path %s because token %s is not set", path, token_name)
 					continue PathsLoop
 				}
 			}

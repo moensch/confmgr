@@ -3,12 +3,12 @@ package confmgr
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/moensch/confmgr/backends"
 	"github.com/moensch/confmgr/vars"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -24,14 +24,12 @@ func (c *ConfMgr) HandleAdminGetKeyType(w http.ResponseWriter, r *http.Request, 
 
 	keytype, err := b.GetType(keyName)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
 	if keytype == vars.TYPE_NOT_FOUND {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "Key %s not found\n", keyName)
+		SendErrorResponse(w, http.StatusNotFound, fmt.Sprintf("Key %s not found", keyName))
 		return
 	}
 	resp := StringKeyResponse{"string", TypeToString(keytype)}
@@ -45,24 +43,21 @@ func (c *ConfMgr) HandleAdminKeyStore(w http.ResponseWriter, r *http.Request, b 
 	if !strings.HasPrefix(keyName, c.Config.Main.KeyPrefix) {
 		keyName = c.Config.Main.KeyPrefix + keyName
 	}
-	log.Printf("Storing key %s", keyName)
+	log.Infof("Storing key %s", keyName)
 
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
 	if err := r.Body.Close(); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 	err = c.SaveKeyFromJSON(keyName, body, b)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
@@ -78,8 +73,7 @@ func (c *ConfMgr) HandleAdminListHashFields(w http.ResponseWriter, r *http.Reque
 
 	value, err := b.GetHash(keyName)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
@@ -116,8 +110,7 @@ func (c *ConfMgr) HandleAdminListKeysFiltered(w http.ResponseWriter, r *http.Req
 	resp, err := c.ListKeys(filter, b)
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
@@ -153,8 +146,7 @@ func (c *ConfMgr) HandleAdminKeyDelete(w http.ResponseWriter, r *http.Request, b
 
 	err := b.DeleteKey(keyName)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
@@ -171,23 +163,20 @@ func (c *ConfMgr) HandleListAppend(w http.ResponseWriter, r *http.Request, b bac
 
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
 	if err := r.Body.Close(); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
-	log.Printf("List append to %s: '%s'", keyName, body)
+	log.Infof("List append to %s: '%s'", keyName, body)
 	err = c.ListAppendFromJSON(keyName, body, b)
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
@@ -213,23 +202,20 @@ func (c *ConfMgr) HandleAdminSetHashField(w http.ResponseWriter, r *http.Request
 
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
 	if err := r.Body.Close(); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
-	log.Printf("Set hfield %s/%s to '%s'", keyName, fieldName, body)
+	log.Infof("Set hfield %s/%s to '%s'", keyName, fieldName, body)
 	err = c.SetHashFieldFromJSON(keyName, fieldName, body, b)
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
@@ -243,7 +229,7 @@ func (c *ConfMgr) SetHashFieldFromJSON(keyName string, fieldName string, jsondat
 		return err
 	}
 
-	log.Printf("Settings %s/%s to '%s'", keyName, fieldName, request.Data)
+	log.Infof("Settings %s/%s to '%s'", keyName, fieldName, request.Data)
 	return b.SetHashField(keyName, fieldName, request.Data)
 }
 
@@ -296,8 +282,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request, b ba
 	}
 	keytype, err := b.GetType(keyName)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
@@ -311,8 +296,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request, b ba
 	case vars.TYPE_STRING:
 		value, err := b.GetString(keyName)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Backend error: %s\n", err)
+			SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 			return
 		}
 		resp = &StringKeyResponse{
@@ -322,8 +306,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request, b ba
 	case vars.TYPE_LIST:
 		value, err := b.GetList(keyName)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Backend error: %s\n", err)
+			SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 			return
 		}
 		resp = &ListKeyResponse{
@@ -333,8 +316,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request, b ba
 	case vars.TYPE_HASH:
 		value, err := b.GetHash(keyName)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Backend error: %s\n", err)
+			SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 			return
 		}
 
@@ -343,8 +325,7 @@ func (c *ConfMgr) HandleAdminKeyGet(w http.ResponseWriter, r *http.Request, b ba
 			Data: value,
 		}
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Unsupported key type: %s\n", TypeToString(keytype))
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Unsupported key type: %s", TypeToString(keytype)))
 		return
 	}
 
@@ -362,8 +343,7 @@ func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request
 
 	keytype, err := b.GetType(keyName)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Backend error: %s\n", err)
+		SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 		return
 	}
 
@@ -377,8 +357,7 @@ func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request
 	case vars.TYPE_HASH:
 		exists, err := b.HashFieldExists(keyName, fieldName)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Backend error: %s\n", err)
+			SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 			return
 		}
 		if exists == false {
@@ -388,11 +367,10 @@ func (c *ConfMgr) HandleAdminGetHashField(w http.ResponseWriter, r *http.Request
 		}
 		value, err := b.GetHashField(keyName, fieldName)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Backend error: %s\n", err)
+			SendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Backend error: %s", err))
 			return
 		}
-		log.Printf("Retrieved hash field: Key: '%s'  / Field: '%s'", keyName, fieldName)
+		log.Infof("Retrieved hash field: Key: '%s'  / Field: '%s'", keyName, fieldName)
 
 		resp = &StringKeyResponse{
 			Type: TypeToString(vars.TYPE_STRING),

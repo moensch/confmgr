@@ -3,10 +3,10 @@ package redis
 import (
 	"errors"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/garyburd/redigo/redis"
 	"github.com/moensch/confmgr/backends"
 	"github.com/moensch/confmgr/vars"
-	"log"
 	"time"
 )
 
@@ -29,17 +29,20 @@ func (f *ConfigBackendRedisFactory) NewBackend() backend.ConfigBackend {
 	backend.Conn = f.Pool.Get()
 	err := backend.Conn.Err()
 	if err != nil {
-		log.Printf("redis error: %s", err)
+		log.WithFields(log.Fields{
+			"activeconns": f.Pool.ActiveCount(),
+			"error":       err,
+		}).Warn("Cannot get Redis conn")
 	}
 
 	return backend
 }
 
 func newRedisPool(proto string, address string) *redis.Pool {
-	log.Printf("Setting up redis pool for: %s:%s", proto, address)
+	log.Infof("Setting up redis pool for: %s:%s", proto, address)
 	return &redis.Pool{
 		MaxIdle:     5,
-		MaxActive:   20,
+		MaxActive:   5,
 		Wait:        true,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {

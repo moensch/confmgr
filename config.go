@@ -2,7 +2,7 @@ package confmgr
 
 import (
 	"github.com/BurntSushi/toml"
-	"log"
+	log "github.com/Sirupsen/logrus"
 )
 
 type ConfigMgrConfig struct {
@@ -28,7 +28,7 @@ type mainConfig struct {
 }
 
 func (c *ConfMgr) LoadConfig(path string) error {
-	log.Printf("Reading config from: '%s'", path)
+	log.Infof("Reading config from: '%s'", path)
 
 	_, err := toml.DecodeFile(path, &c.Config)
 

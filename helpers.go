@@ -3,6 +3,7 @@ package confmgr
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/moensch/confmgr/vars"
 	"net/http"
 	"strings"
@@ -174,6 +175,16 @@ func SendResponse(w http.ResponseWriter, r *http.Request, resp KeyResponse) {
 		SendJSONResponse(w, stringresp)
 	}
 }
+
+func SendErrorResponse(w http.ResponseWriter, code int, body string) {
+	log.WithFields(log.Fields{
+		"error": body,
+		"code":  code,
+	}).Error("HTTP ERROR")
+	w.WriteHeader(code)
+	fmt.Fprintf(w, "%s\n", body)
+}
+
 func SendTEXTResponse(w http.ResponseWriter, resp string) {
 	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
