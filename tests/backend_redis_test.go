@@ -1,26 +1,22 @@
 package confmgr
 
 import (
-	"github.com/moensch/confmgr/backends"
+	redigo "github.com/garyburd/redigo/redis"
 	"github.com/moensch/confmgr/backends/redis"
 	"github.com/moensch/confmgr/vars"
-	"log"
 	"testing"
 )
 
 var (
-	backendFactory backend.ConfigBackendFactory
-	b              backend.ConfigBackend
+	b redis.ConfigBackendRedis
 )
 
 func init() {
-	log.Println("calling testing init")
-	backendFactory = redis.NewFactory()
+	b = redis.ConfigBackendRedis{}
+	b.Conn, _ = redigo.Dial("tcp", ":6379")
 }
 
 func TestString(t *testing.T) {
-	b := backendFactory.NewBackend()
-
 	str, err := b.GetString("cfg:test:string")
 
 	if err != nil {
@@ -35,8 +31,6 @@ func TestString(t *testing.T) {
 }
 
 func TestType(t *testing.T) {
-	b := backendFactory.NewBackend()
-
 	testdata := make(map[string]int)
 	testdata["cfg:test:string"] = vars.TYPE_STRING
 	testdata["cfg:test:array"] = vars.TYPE_LIST
@@ -61,8 +55,6 @@ func TestType(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
-	b := backendFactory.NewBackend()
-
 	exists, err := b.Exists("thiswillneverexist")
 
 	if err != nil {
@@ -89,7 +81,6 @@ func TestExists(t *testing.T) {
 }
 
 func TestHashFieldExist(t *testing.T) {
-	b := backendFactory.NewBackend()
 
 	type TestEntry struct {
 		Key    string
@@ -134,7 +125,6 @@ func TestHashFieldExist(t *testing.T) {
 }
 
 func TestListIndexExist(t *testing.T) {
-	b := backendFactory.NewBackend()
 
 	type TestEntry struct {
 		Key    string
@@ -194,7 +184,6 @@ func TestListIndexExist(t *testing.T) {
 }
 
 func TestHash(t *testing.T) {
-	b := backendFactory.NewBackend()
 
 	hash, err := b.GetHash("cfg:test:hash")
 
@@ -208,7 +197,6 @@ func TestHash(t *testing.T) {
 }
 
 func TestHashField(t *testing.T) {
-	b := backendFactory.NewBackend()
 
 	str, err := b.GetHashField("cfg:test:hash", "field")
 
@@ -220,7 +208,6 @@ func TestHashField(t *testing.T) {
 }
 
 func TestListIndex(t *testing.T) {
-	b := backendFactory.NewBackend()
 
 	str, err := b.GetListIndex("cfg:test:array", 0)
 
@@ -231,7 +218,6 @@ func TestListIndex(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	b := backendFactory.NewBackend()
 
 	strlist, err := b.GetList("cfg:test:array")
 
@@ -244,7 +230,6 @@ func TestList(t *testing.T) {
 }
 
 func TestListKeys(t *testing.T) {
-	b := backendFactory.NewBackend()
 
 	keys, err := b.ListKeys("")
 
@@ -258,7 +243,6 @@ func TestListKeys(t *testing.T) {
 }
 
 func TestListKeysFilter(t *testing.T) {
-	b := backendFactory.NewBackend()
 
 	keys, err := b.ListKeys("*test*")
 
