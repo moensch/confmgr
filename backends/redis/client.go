@@ -6,6 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/garyburd/redigo/redis"
 	"github.com/moensch/confmgr/backends"
+	"github.com/moensch/confmgr/config"
 	"github.com/moensch/confmgr/vars"
 	"time"
 )
@@ -14,16 +15,16 @@ type ConfigBackendRedisFactory struct {
 	Pool *redis.Pool
 }
 
-func NewFactory() backend.ConfigBackendFactory {
+func NewFactory(config config.BackendConfig) backend.ConfigBackendFactory {
+	log.Infof("Connecting to redis at %s:%d", config.Address, config.Port)
 	factory := &ConfigBackendRedisFactory{
-		Pool: newRedisPool("tcp", ":6379"),
+		Pool: newRedisPool("tcp", fmt.Sprintf("%s:%d", config.Address, config.Port)),
 	}
 
 	return factory
 }
 
 func (f *ConfigBackendRedisFactory) NewBackend() backend.ConfigBackend {
-	// TODO: Make config passing work
 	backend := &ConfigBackendRedis{}
 
 	backend.Conn = f.Pool.Get()

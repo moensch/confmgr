@@ -1,4 +1,4 @@
-package confmgr
+package config
 
 import (
 	"github.com/BurntSushi/toml"
@@ -6,31 +6,31 @@ import (
 )
 
 type ConfigMgrConfig struct {
-	Listen   listenConfig `toml:"listen"`
-	Main     mainConfig   `toml:"main"`
-	Backends map[string]backendConfig
+	Listen   ListenConfig `toml:"listen"`
+	Main     MainConfig   `toml:"main"`
+	Backends map[string]BackendConfig
 }
 
-type backendConfig struct {
+type BackendConfig struct {
 	Port    int
 	Address string
 }
 
-type listenConfig struct {
+type ListenConfig struct {
 	Port    int
 	Address string
 }
 
-type mainConfig struct {
+type MainConfig struct {
 	KeyPaths  []string `toml:"key_paths"`
 	KeyPrefix string   `toml:"key_prefix"`
 	HdrPrefix string   `toml:"hdr_prefix"`
 }
 
-func (c *ConfMgr) LoadConfig(path string) error {
+func LoadConfig(c *ConfigMgrConfig, path string) error {
 	log.Infof("Reading config from: '%s'", path)
 
-	_, err := toml.DecodeFile(path, &c.Config)
+	_, err := toml.DecodeFile(path, &c)
 
 	return err
 }
