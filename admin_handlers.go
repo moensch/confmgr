@@ -153,7 +153,7 @@ func (c *ConfMgr) HandleAdminKeyDelete(w http.ResponseWriter, r *http.Request, b
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *ConfMgr) HandleListAppend(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
+func (c *ConfMgr) HandleAdminListAppend(w http.ResponseWriter, r *http.Request, b backend.ConfigBackend) {
 	reqVars := mux.Vars(r)
 	keyName := reqVars["keyName"]
 

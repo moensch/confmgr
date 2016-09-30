@@ -70,6 +70,12 @@ func (c *ConfMgr) RouteDefinitions() Routes {
 			handlerDecorate(c.HandleAdminGetHashField),
 		},
 		Route{
+			"HandleAdminListAppend",
+			"PATCH",
+			"/admin/key/append/{keyName}",
+			handlerDecorate(c.HandleAdminListAppend),
+		},
+		Route{
 			"HandleAdminSetHashField",
 			"POST",
 			"/admin/key/{keyName}/{fieldName}",
