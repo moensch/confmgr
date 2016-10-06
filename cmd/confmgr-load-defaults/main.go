@@ -44,8 +44,15 @@ func main() {
 
 	b := confmgr.BackendFactory.NewBackend()
 	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
 		log.Infof("Loading file: %s", f.Name())
 		keyName := f.Name()
+		if !strings.HasPrefix(keyName, srv.Config.Main.KeyPrefix) {
+			keyName = srv.Config.Main.KeyPrefix + keyName
+		}
+		log.Infof("Storing key: %s", keyName)
 		data, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", defaultsPath, f.Name()))
 		if err != nil {
 			log.Fatalf("Cannot read file: %s", err)
