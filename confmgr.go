@@ -19,7 +19,7 @@ type ConfMgr struct {
 }
 
 var (
-	backendFactory backend.ConfigBackendFactory
+	BackendFactory backend.ConfigBackendFactory
 )
 
 func NewConfMgr() (*ConfMgr, error) {
@@ -51,7 +51,7 @@ func NewConfMgr() (*ConfMgr, error) {
 		}
 	}
 
-	backendFactory = redis.NewFactory(confmgr.Config.Backends["redis"])
+	BackendFactory = redis.NewFactory(confmgr.Config.Backends["redis"])
 	confmgr.Router = confmgr.NewRouter()
 
 	return confmgr, err

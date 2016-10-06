@@ -35,7 +35,7 @@ func handlerDecorate(f HandlerFuncBackend) http.HandlerFunc {
 		scope := ScopeFromHeaders(r.Header)
 		context.Set(r, ReqScope, scope)
 
-		b := backendFactory.NewBackend()
+		b := BackendFactory.NewBackend()
 		defer b.Close()
 		f(w, r, b)
 		log.WithFields(log.Fields{
