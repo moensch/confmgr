@@ -57,6 +57,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Cannot read file: %s", err)
 		}
+		log.Debugf("Storing data: %s", string(data))
 		err = srv.SaveKeyFromJSON(keyName, data, b)
 		if err != nil {
 			log.Warnf("Cannot store key: %s", err)

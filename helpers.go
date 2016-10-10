@@ -211,6 +211,9 @@ func (r *GenericRequest) AsHash() HashKeyResponse {
 	newtype.Type = "hash"
 	newtype.Data = make(map[string]string)
 	for k, v := range r.Data.(map[string]interface{}) {
+		if v == nil {
+			continue
+		}
 		newtype.Data[k] = v.(string)
 	}
 	return newtype
@@ -221,6 +224,9 @@ func (r *GenericRequest) AsList() ListKeyResponse {
 	newtype.Type = "list"
 	newtype.Data = make([]string, len(r.Data.([]interface{})))
 	for k, v := range r.Data.([]interface{}) {
+		if v == nil {
+			continue
+		}
 		newtype.Data[k] = v.(string)
 	}
 	return newtype
