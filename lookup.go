@@ -16,7 +16,7 @@ func (c *ConfMgr) LookupString(keyName string, scope map[string]string, b backen
 
 	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_STRING, scope, b) {
 		stringdata, err := b.GetString(keyName)
-		stringdata = c.SubstituteValues(stringdata)
+		stringdata = c.SubstituteValues(stringdata, scope, b)
 
 		if err != nil {
 			return resp, err
@@ -45,7 +45,7 @@ func (c *ConfMgr) LookupHash(keyName string, scope map[string]string, b backend.
 
 		var valuesource = make(map[string]ValueSource)
 		for k, v := range hashdata {
-			valuesource[k] = ValueSource{c.SubstituteValues(v), keyName}
+			valuesource[k] = ValueSource{c.SubstituteValues(v, scope, b), keyName}
 		}
 		hashes_to_merge = append(hashes_to_merge, valuesource)
 	}
@@ -67,10 +67,25 @@ func (c *ConfMgr) LookupHash(keyName string, scope map[string]string, b backend.
 	return resp, err
 }
 
-func (c *ConfMgr) LookupHashFieldByString(searchString string, b backend.ConfigBackend) string {
-	//TODO
-	scope := make(map[string]string)
-	scope["pod"] = "atr2"
+func (c *ConfMgr) LookupStringByString(searchString string, scope map[string]string, b backend.ConfigBackend) (string, error) {
+	// ${key}
+	string_vars := regexp.MustCompile("\\${(\\S+?)}")
+	matches := string_vars.FindAllStringSubmatch(searchString, -1)
+	if len(matches) > 0 {
+		keyName := matches[0][1]
+		resp, err := c.LookupString(keyName, scope, b)
+
+		if err != nil {
+			return "", err
+		}
+
+		return resp.ToString(), nil
+	}
+	// No match - returning original
+	return searchString, nil
+}
+
+func (c *ConfMgr) LookupHashFieldByString(searchString string, scope map[string]string, b backend.ConfigBackend) (string, error) {
 	// ${key/fieldname}
 	hash_field_vars := regexp.MustCompile("\\${(\\S+?)/(\\S+?)}")
 	matches := hash_field_vars.FindAllStringSubmatch(searchString, -1)
@@ -80,17 +95,20 @@ func (c *ConfMgr) LookupHashFieldByString(searchString string, b backend.ConfigB
 		resp, err := c.LookupHashField(keyName, fieldName, scope, b)
 
 		if err != nil {
-			return ""
+			return "", err
 		}
 
-		return resp.ToString()
+		return resp.ToString(), nil
 	}
-	return ""
+	// No matches - return original
+	return searchString, nil
 }
 
 func (c *ConfMgr) LookupHashField(keyName string, fieldName string, scope map[string]string, b backend.ConfigBackend) (LookupStringResponse, error) {
 	var resp LookupStringResponse
 	var err error
+
+	var foundAny bool
 
 	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_HASH, scope, b) {
 		exists, err := b.HashFieldExists(keyName, fieldName)
@@ -99,19 +117,25 @@ func (c *ConfMgr) LookupHashField(keyName string, fieldName string, scope map[st
 		}
 		if exists {
 			stringdata, err := b.GetHashField(keyName, fieldName)
-			stringdata = c.SubstituteValues(stringdata)
+			stringdata = c.SubstituteValues(stringdata, scope, b)
 
 			if err != nil {
 				return resp, err
 			}
+
+			foundAny = true
 
 			resp.Data = ValueSource{stringdata, keyName}
 		}
 	}
 
 	resp.Type = TypeToString(vars.TYPE_STRING)
+	if !foundAny {
+		return resp, fmt.Errorf("Unable to find hash field: %s/%s", keyName, fieldName)
+	}
 	return resp, err
 }
+
 func (c *ConfMgr) LookupList(keyName string, scope map[string]string, b backend.ConfigBackend) (LookupListResponse, error) {
 	var resp LookupListResponse
 	var err error
@@ -132,6 +156,7 @@ func (c *ConfMgr) LookupList(keyName string, scope map[string]string, b backend.
 	resp.Type = TypeToString(vars.TYPE_LIST)
 	return resp, err
 }
+
 func (c *ConfMgr) LookupListIndex(keyName string, listIndex int64, scope map[string]string, b backend.ConfigBackend) (LookupStringResponse, error) {
 	var resp LookupStringResponse
 	var err error
@@ -144,6 +169,7 @@ func (c *ConfMgr) LookupListIndex(keyName string, listIndex int64, scope map[str
 	resp.Type = TypeToString(vars.TYPE_STRING)
 	if int(listIndex) >= len(list.Data) {
 		resp.Data = ValueSource{"", ""}
+		err = fmt.Errorf("Cannot find list index %d in list %s (only has %d entries)", listIndex, keyName, len(list.Data))
 	} else {
 		resp.Data = list.Data[listIndex]
 	}
@@ -151,10 +177,8 @@ func (c *ConfMgr) LookupListIndex(keyName string, listIndex int64, scope map[str
 	return resp, err
 }
 
-func (c *ConfMgr) LookupListIndexByString(searchString string, b backend.ConfigBackend) string {
+func (c *ConfMgr) LookupListIndexByString(searchString string, scope map[string]string, b backend.ConfigBackend) (string, error) {
 	// ${key/index/3}
-	//TODO
-	scope := make(map[string]string)
 	hash_field_vars := regexp.MustCompile("\\${(\\S+?)/index/(\\d+?)}")
 	matches := hash_field_vars.FindAllStringSubmatch(searchString, -1)
 	if len(matches) > 0 {
@@ -163,25 +187,63 @@ func (c *ConfMgr) LookupListIndexByString(searchString string, b backend.ConfigB
 		resp, err := c.LookupListIndex(keyName, listIndex, scope, b)
 
 		if err != nil {
-			return ""
+			return "", err
 		}
 
-		return resp.ToString()
+		return resp.ToString(), nil
 	}
-	return ""
+	// No match - returning original
+	return searchString, nil
 }
 
 /**
  * Finds other keys like ${db_policy/host} in input string
  * and replaces them with a lookup value
  */
-func (c *ConfMgr) SubstituteValues(input string) string {
-	//TODO
-	//hash_field_vars := regexp.MustCompile("\\${(\\S+?/\\S+?)}")
-	//list_index_vars := regexp.MustCompile("\\${(\\S+?/index/\\S+?)}")
+func (c *ConfMgr) SubstituteValues(input string, scope map[string]string, b backend.ConfigBackend) string {
+	log.Debugf("Performing substitution in: %s", input)
+	replacements := make(map[string]string)
 
-	//input = hash_field_vars.ReplaceAllStringFunc(input, c.LookupHashFieldByString)
-	//input = list_index_vars.ReplaceAllStringFunc(input, c.LookupListIndexByString)
+	// You know, in a perfect world I could just use
+	//  regexp.ReplaceAllStringFunc().
+	// My code is dirty, alas I cannot
+
+	// Find anything that looks like a variable: ${somehash/somefield}
+	var_re := regexp.MustCompile("\\${\\S+?}")
+	matches := var_re.FindAllStringSubmatch(input, -1)
+	if len(matches) > 0 {
+		for _, match := range matches {
+			if _, ok := replacements[match[0]]; ok {
+				// Already got this one
+				continue
+			}
+			var replace string
+			var err error
+			switch {
+			case strings.Contains(match[0], "/index/"):
+				log.Debugf("Substituting list index: %s", match[0])
+				// Array index match: ${somearray/index/0}
+				replace, err = c.LookupListIndexByString(match[0], scope, b)
+			case strings.Contains(match[0], "/"):
+				log.Debugf("Substituting hash field: %s", match[0])
+				// Hash field match: ${somehash/somefield}
+				replace, err = c.LookupHashFieldByString(match[0], scope, b)
+			default:
+				log.Debugf("Substituting string var: %s", match[0])
+				// Hash field match: ${somestringvar}
+				replace, err = c.LookupStringByString(match[0], scope, b)
+			}
+			if err != nil {
+				log.Warnf("String substitute error: %s", err)
+				replace = match[0]
+			}
+			log.Debugf("  Replacement value: %s", replace)
+			replacements[match[0]] = replace
+		}
+	}
+	for search, replace := range replacements {
+		input = strings.Replace(input, search, replace, -1)
+	}
 	return input
 }
 

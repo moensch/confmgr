@@ -2,6 +2,7 @@ package confmgr
 
 import (
 	"encoding/json"
+	log "github.com/Sirupsen/logrus"
 	redigo "github.com/garyburd/redigo/redis"
 	"github.com/moensch/confmgr"
 	"github.com/moensch/confmgr/backends/redis"
@@ -10,6 +11,7 @@ import (
 )
 
 func init() {
+	log.SetLevel(log.DebugLevel)
 	b = redis.ConfigBackendRedis{}
 	b.Conn, _ = redigo.Dial("tcp", ":6379")
 }
@@ -43,6 +45,17 @@ func TestLookupHash(t *testing.T) {
 	t.Logf("%s\n", string(jsonblob))
 }
 
+func TestLookupHashField(t *testing.T) {
+	srv, _ := confmgr.NewConfMgr()
+
+	res, err := srv.LookupHashField("hash", "field1", make(map[string]string), b)
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get hash field: %s", err)
+	}
+	jsonblob, _ := json.MarshalIndent(res, "", "  ")
+	t.Logf("%s\n", string(jsonblob))
+}
+
 func TestLookupList(t *testing.T) {
 	srv, _ := confmgr.NewConfMgr()
 
@@ -52,4 +65,83 @@ func TestLookupList(t *testing.T) {
 	}
 	jsonblob, _ := json.MarshalIndent(res, "", "  ")
 	t.Logf("%s\n", string(jsonblob))
+}
+
+func TestSubstituteHashField(t *testing.T) {
+	srv, _ := confmgr.NewConfMgr()
+
+	expected := "myvalue"
+
+	res, err := srv.LookupHashField("otherhash", "simple", make(map[string]string), b)
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get hash: %s", err)
+	}
+
+	actual := res.ToString()
+	if actual != expected {
+		t.Fatalf("Fail: Returned string %s did not match expected %s", actual, expected)
+	}
+}
+
+func TestSubstituteHashFieldMulti(t *testing.T) {
+	srv, _ := confmgr.NewConfMgr()
+
+	expected := "hello myvalue world myvalue2 goodbye entry2 and testing"
+	res, err := srv.LookupHashField("otherhash", "multi", make(map[string]string), b)
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get hash: %s", err)
+	}
+
+	actual := res.ToString()
+	if actual != expected {
+		t.Fatalf("Fail: Returned string %s did not match expected %s", actual, expected)
+	}
+}
+
+func TestSubstituteStringRecurse(t *testing.T) {
+	srv, _ := confmgr.NewConfMgr()
+
+	expected := "myvalue"
+
+	res, err := srv.LookupString("recurse", make(map[string]string), b)
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get hash: %s", err)
+	}
+
+	actual := res.ToString()
+	if actual != expected {
+		t.Fatalf("Fail: Returned string %s did not match expected %s", actual, expected)
+	}
+}
+
+func TestSubstituteListIndexNotFound(t *testing.T) {
+	srv, _ := confmgr.NewConfMgr()
+
+	expected := "hello ${array/index/99}!"
+
+	res, err := srv.LookupString("otherstring", make(map[string]string), b)
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get string: %s", err)
+	}
+
+	actual := res.ToString()
+	if actual != expected {
+		t.Fatalf("Fail: Returned string %s did not match expected %s", actual, expected)
+	}
+}
+
+func TestSubstituteHashFieldNotFound(t *testing.T) {
+	srv, _ := confmgr.NewConfMgr()
+
+	expected := "${hash/invalid}"
+
+	res, err := srv.LookupString("fieldnotfound", make(map[string]string), b)
+	if err != nil {
+		t.Fatalf("ERROR: Cannot get hash: %s", err)
+	}
+
+	actual := res.ToString()
+	if actual != expected {
+		t.Fatalf("Fail: Returned string %s did not match expected %s", actual, expected)
+	}
 }

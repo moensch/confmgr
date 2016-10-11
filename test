@@ -4,10 +4,27 @@ set -e
 set -x
 
 echo "Running tests..."
+
+# Cleanup
+redis-cli del cfg:test:string
+redis-cli del cfg:test:array
+redis-cli del cfg:test:hash
+redis-cli del cfg:test:otherhash
+redis-cli del cfg:test:otherstring
+redis-cli del cfg:test:recurse
+redis-cli del cfg:test:fieldnotfound
+
+# Set test defaults
 redis-cli set cfg:test:string testing
 redis-cli rpush cfg:test:array entry1
 redis-cli rpush cfg:test:array entry2
 redis-cli rpush cfg:test:array entry3
-redis-cli hset cfg:test:hash field "myvalue"
+redis-cli hset cfg:test:hash field1 "myvalue"
+redis-cli hset cfg:test:hash field2 "myvalue2"
+redis-cli hset cfg:test:otherhash simple '${hash/field1}'
+redis-cli hset cfg:test:otherhash multi 'hello ${hash/field1} world ${hash/field2} goodbye ${array/index/1} and ${string}'
+redis-cli set cfg:test:otherstring 'hello ${array/index/99}!'
+redis-cli set cfg:test:recurse '${otherhash/simple}'
+redis-cli set cfg:test:fieldnotfound '${hash/invalid}'
 
 go test -v ./tests

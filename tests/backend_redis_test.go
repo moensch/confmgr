@@ -91,7 +91,7 @@ func TestHashFieldExist(t *testing.T) {
 	testdata := []TestEntry{
 		TestEntry{
 			"cfg:test:hash",
-			"field",
+			"field1",
 			true,
 		},
 		TestEntry{
@@ -198,7 +198,7 @@ func TestHash(t *testing.T) {
 
 func TestHashField(t *testing.T) {
 
-	str, err := b.GetHashField("cfg:test:hash", "field")
+	str, err := b.GetHashField("cfg:test:hash", "field1")
 
 	if err != nil {
 		t.Fatalf("ERROR: Cannot get hash field: %s", err)
