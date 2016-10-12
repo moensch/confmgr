@@ -117,31 +117,18 @@ func TestSubstituteStringRecurse(t *testing.T) {
 func TestSubstituteListIndexNotFound(t *testing.T) {
 	srv, _ := confmgr.NewConfMgr()
 
-	expected := "hello ${array/index/99}!"
-
-	res, err := srv.LookupString("otherstring", make(map[string]string), b)
-	if err != nil {
+	_, err := srv.LookupString("otherstring", make(map[string]string), b)
+	if err == nil {
 		t.Fatalf("ERROR: Cannot get string: %s", err)
-	}
-
-	actual := res.ToString()
-	if actual != expected {
-		t.Fatalf("Fail: Returned string %s did not match expected %s", actual, expected)
+		t.Fatalf("Expected error but no error was generated")
 	}
 }
 
 func TestSubstituteHashFieldNotFound(t *testing.T) {
 	srv, _ := confmgr.NewConfMgr()
 
-	expected := "${hash/invalid}"
-
-	res, err := srv.LookupString("fieldnotfound", make(map[string]string), b)
-	if err != nil {
-		t.Fatalf("ERROR: Cannot get hash: %s", err)
-	}
-
-	actual := res.ToString()
-	if actual != expected {
-		t.Fatalf("Fail: Returned string %s did not match expected %s", actual, expected)
+	_, err := srv.LookupString("fieldnotfound", make(map[string]string), b)
+	if err == nil {
+		t.Fatalf("Expected error but no error was generated")
 	}
 }

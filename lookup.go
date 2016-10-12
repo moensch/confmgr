@@ -16,8 +16,10 @@ func (c *ConfMgr) LookupString(keyName string, scope map[string]string, b backen
 
 	for _, keyName := range c.ExistingKeys(keyName, vars.TYPE_STRING, scope, b) {
 		stringdata, err := b.GetString(keyName)
-		stringdata = c.SubstituteValues(stringdata, scope, b)
-
+		if err != nil {
+			return resp, err
+		}
+		stringdata, err = c.SubstituteValues(stringdata, scope, b)
 		if err != nil {
 			return resp, err
 		}
@@ -45,7 +47,14 @@ func (c *ConfMgr) LookupHash(keyName string, scope map[string]string, b backend.
 
 		var valuesource = make(map[string]ValueSource)
 		for k, v := range hashdata {
-			valuesource[k] = ValueSource{c.SubstituteValues(v, scope, b), keyName}
+			v, err := c.SubstituteValues(v, scope, b)
+			if err != nil {
+				return resp, err
+			}
+			valuesource[k] = ValueSource{v, keyName}
+			if err != nil {
+				return resp, err
+			}
 		}
 		hashes_to_merge = append(hashes_to_merge, valuesource)
 	}
@@ -117,8 +126,10 @@ func (c *ConfMgr) LookupHashField(keyName string, fieldName string, scope map[st
 		}
 		if exists {
 			stringdata, err := b.GetHashField(keyName, fieldName)
-			stringdata = c.SubstituteValues(stringdata, scope, b)
-
+			if err != nil {
+				return resp, err
+			}
+			stringdata, err = c.SubstituteValues(stringdata, scope, b)
 			if err != nil {
 				return resp, err
 			}
@@ -200,7 +211,7 @@ func (c *ConfMgr) LookupListIndexByString(searchString string, scope map[string]
  * Finds other keys like ${db_policy/host} in input string
  * and replaces them with a lookup value
  */
-func (c *ConfMgr) SubstituteValues(input string, scope map[string]string, b backend.ConfigBackend) string {
+func (c *ConfMgr) SubstituteValues(input string, scope map[string]string, b backend.ConfigBackend) (string, error) {
 	log.Debugf("Performing substitution in: %s", input)
 	replacements := make(map[string]string)
 
@@ -235,7 +246,7 @@ func (c *ConfMgr) SubstituteValues(input string, scope map[string]string, b back
 			}
 			if err != nil {
 				log.Warnf("String substitute error: %s", err)
-				replace = match[0]
+				return input, err
 			}
 			log.Debugf("  Replacement value: %s", replace)
 			replacements[match[0]] = replace
@@ -244,7 +255,7 @@ func (c *ConfMgr) SubstituteValues(input string, scope map[string]string, b back
 	for search, replace := range replacements {
 		input = strings.Replace(input, search, replace, -1)
 	}
-	return input
+	return input, nil
 }
 
 /*
